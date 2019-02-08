@@ -2,7 +2,6 @@ import os
 import tensorflow as tf
 import numpy as np
 from math import exp
-from tqdm import tqdm
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from pycocoevalcap.meteor.meteor import Meteor
 from pycocoevalcap.cider.cider import Cider
@@ -197,8 +196,8 @@ def _train(config):
 
     for e in range(config.num_epochs):
         total_loss = []
-        for batches in tqdm(train_data.get_batches(config.batch_size,
-            front_heavy = (e == 0))):
+        for batches in train_data.get_batches(config.batch_size,
+            front_heavy = (e == 0)):
 
             if steps != 0 or not config.start_eval:
                 steps += 1

@@ -169,7 +169,10 @@ def extract_commonsense(bundle):
 def read_wikihop_data_wcs(path, commonsense_file, 
         max_context_iterations, stop_words, tfidf_layer=1, one_hop = False,
         only_follows = False):
-    data = parse_raw_wikihop_data(path, tfidf_layer, only_follows)
+    if path.endswith('processed_data.json'):
+        data = parse_raw_our_data(path)
+    else:
+        data = parse_raw_wikihop_data(path, tfidf_layer, only_follows)
     print("building relations...")
     relations = CG.get_relations(commonsense_file)
     print("done")
@@ -210,7 +213,7 @@ def parse_raw_wikihop_data(path, tfidf_layer, only_follows = False):
         i = 0
         for id, row in tqdm(enumerate(reader)):
             i += 1
-            #if i > 10: 
+            #if i > 10:
             #  break
             # we lowercase everything because some mturkers used all caps and others used all lowercase
             #print row
@@ -219,7 +222,7 @@ def parse_raw_wikihop_data(path, tfidf_layer, only_follows = False):
             answer1 = lower_all(nltk.word_tokenize(row['answer'].encode('utf-8')))
             orig_cand = row['candidates']
             cand = [lower_all(nltk.word_tokenize(c)) for c in row['candidates']]
-            
+
             documents = row['supports']
 
             top_docs = filter_tfidf_wikihop(question, documents, tfidf_layer)
@@ -231,9 +234,9 @@ def parse_raw_wikihop_data(path, tfidf_layer, only_follows = False):
                     words = [d_.encode('utf-8') for d_ in words]
                     docs.append(words)
                 except UnicodeDecodeError:
-                    continue 
+                    continue
             context = []
-            for i, c in enumerate(docs):             
+            for i, c in enumerate(docs):
                 context.append(c)
             data_dict = {
                     'summary': context,
@@ -255,6 +258,43 @@ def parse_raw_wikihop_data(path, tfidf_layer, only_follows = False):
                     data.append(data_dict)
             else:
                 data.append(data_dict)
+
+    return data
+
+
+def parse_raw_our_data(path):
+    data = []
+
+    print("Loading wikihop data from %s..." % path)
+    with open(path) as input_json:
+        reader = json.load(input_json)
+        i = 0
+        for id, example in tqdm(enumerate(reader)):
+            i += 1
+            # if i > 10:
+            #  break
+            # we lowercase everything because some mturkers used all caps and others used all lowercase
+            # print row
+            question = lower_all(example['question'].replace("_", " ").encode('utf-8').split(" "))
+            orig_answer = example['answer'].encode("utf-8")
+            answer1 = lower_all(nltk.word_tokenize(orig_answer))
+
+            documents = example['text']
+
+            context = []
+            for i, c in enumerate(documents):
+                context.append(nltk.word_tokenize(c))
+            data_dict = {
+                'summary': context,
+                'ques': question,
+                'candidates': None,
+                'orig_cand': None,
+                'answer1': answer1,
+                'orig_answer': orig_answer,
+                'data_id': example['id']}
+
+
+            data.append(data_dict)
 
     return data
 
